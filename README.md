@@ -1,6 +1,7 @@
 # Serverless URL Shortener
 
-AWS Lambda와 DynamoDB를 사용한 서버리스 URL 단축 서비스입니다.
+사용자는 짧은 URL로 접근하면 API Gateway가 요청을 받아 redirect Lambda를 호출하고,
+Lambda는 DynamoDB에서 원본 URL을 조회한 뒤 301 Redirect 응답을 반환합니다.
 
 ## Tech Stack
 - AWS Lambda (Python)
