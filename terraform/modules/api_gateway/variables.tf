@@ -1,20 +1,19 @@
-variable "api_name" {
-  description = "API Gateway의 이름"
+variable "shorten_lambda_arn" {
+  description = "ARN of shorten Lambda"
   type        = string
 }
 
-variable "stage_name" {
-  description = "배포 스테이지 이름 (dev, prod 등)"
-  type        = string
-  default     = "dev"
-}
-
-variable "lambda_invoke_arn" {
-  description = "연결할 Lambda의 Invoke ARN"
+variable "shorten_lambda_name" {
+  description = "Name of shorten Lambda"
   type        = string
 }
 
-variable "lambda_function_name" {
-  description = "Lambda 함수 이름 (권한 설정용)"
+variable "redirect_lambda_arn" {
+  description = "ARN of redirect Lambda"
+  type        = string
+}
+
+variable "redirect_lambda_name" {
+  description = "Name of redirect Lambda"
   type        = string
 }

@@ -1,59 +1,54 @@
-# REST API 선언
-resource "aws_api_gateway_rest_api" "this" {
-  name = var.api_name
+# HTTP API 생성
+resource "aws_apigatewayv2_api" "this" {
+  name          = "url-shortener-api"
+  protocol_type = "HTTP"
 }
 
-# 모든 경로를 수용하는 Proxy 리소스
-resource "aws_api_gateway_resource" "proxy" {
-  rest_api_id = aws_api_gateway_rest_api.this.id
-  parent_id   = aws_api_gateway_rest_api.this.root_resource_id
-  path_part   = "{proxy+}"
+# shorten Lambda 연동
+resource "aws_apigatewayv2_integration" "shorten" {
+  api_id           = aws_apigatewayv2_api.this.id
+  integration_type = "AWS_PROXY"
+  integration_uri  = var.shorten_lambda_arn
 }
 
-# ANY 메서드
-resource "aws_api_gateway_method" "proxy_method" {
-  rest_api_id   = aws_api_gateway_rest_api.this.id
-  resource_id   = aws_api_gateway_resource.proxy.id
-  http_method   = "ANY"
-  authorization = "NONE"
+resource "aws_apigatewayv2_route" "shorten" {
+  api_id    = aws_apigatewayv2_api.this.id
+  route_key = "POST /shorten"
+  target    = "integrations/${aws_apigatewayv2_integration.shorten.id}"
 }
 
-# Lambda 통합
-resource "aws_api_gateway_integration" "lambda_integration" {
-  rest_api_id             = aws_api_gateway_rest_api.this.id
-  resource_id             = aws_api_gateway_resource.proxy.id
-  http_method             = aws_api_gateway_method.proxy_method.http_method
-  integration_http_method = "POST"
-  type                    = "AWS_PROXY"
-  uri                     = var.lambda_invoke_arn
+# redirect Lambda 연동
+resource "aws_apigatewayv2_integration" "redirect" {
+  api_id           = aws_apigatewayv2_api.this.id
+  integration_type = "AWS_PROXY"
+  integration_uri  = var.redirect_lambda_arn
+}
+resource "aws_apigatewayv2_route" "redirect" {
+  api_id    = aws_apigatewayv2_api.this.id
+  route_key = "GET /{shortId}"
+  target    = "integrations/${aws_apigatewayv2_integration.redirect.id}"
 }
 
-# API 배포
-resource "aws_api_gateway_deployment" "this" {
-  depends_on = [aws_api_gateway_integration.lambda_integration]
-  rest_api_id = aws_api_gateway_rest_api.this.id
-
-  triggers = {
-    redeployment = sha1(jsonencode(aws_api_gateway_rest_api.this))
-  }
-
-  lifecycle {
-    create_before_destroy = true
-  }
+# Stage (자동 배포)
+resource "aws_apigatewayv2_stage" "prod" {
+  api_id      = aws_apigatewayv2_api.this.id
+  name        = "prod"
+  auto_deploy = true
 }
 
-# 스테이지
-resource "aws_api_gateway_stage" "this" {
-  deployment_id = aws_api_gateway_deployment.this.id
-  rest_api_id   = aws_api_gateway_rest_api.this.id
-  stage_name    = var.stage_name
-}
-
-# API Gateway가 Lambda를 호출할 수 있는 권한 부여
-resource "aws_lambda_permission" "apigw_lambda" {
-  statement_id  = "AllowExecutionFromAPIGateway"
+# Lambda permission
+resource "aws_lambda_permission" "shorten" {
+  statement_id  = "AllowInvokeFromAPIGatewayShorten"
   action        = "lambda:InvokeFunction"
-  function_name = var.lambda_function_name
+  function_name = var.shorten_lambda_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_api_gateway_rest_api.this.execution_arn}/*/*"
+  source_arn    = "${aws_apigatewayv2_api.this.execution_arn}/*/*"
+}
+
+resource "aws_lambda_permission" "redirect" {
+  statement_id  = "AllowInvokeFromAPIGatewayRedirect"
+  action        = "lambda:InvokeFunction"
+  function_name = var.redirect_lambda_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_apigatewayv2_api.this.execution_arn}/*/*"
 }

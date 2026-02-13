@@ -1,6 +1,7 @@
 import json
 import boto3
 import os
+import time
 from datetime import datetime
 from decimal import Decimal
 
@@ -9,11 +10,27 @@ urls_table = dynamodb.Table(os.environ.get('URLS_TABLE', 'urls'))
 clicks_table = dynamodb.Table(os.environ.get('CLICKS_TABLE', 'clicks'))
 
 def lambda_handler(event, context):
+    # Path parameter에서 requestId 추출
+    request_id = (
+        event.get("requestContext", {}).get("requestId")
+        or context.aws_request_id
+        or "unknown"
+    )
+
+    start_time = time.time()
+    
     try:
         # Path parameter에서 shortId 추출
         short_id = event.get('pathParameters', {}).get('shortId')
         
         if not short_id:
+            log_event(
+                level="WARN",
+                log_type="ACCESS",
+                message="Missing shortId",
+                statusCode=400,
+                requestId=request_id
+            )
             return create_response(400, {'error': 'Short ID is required'})
         
         # DynamoDB에서 URL 조회
@@ -21,6 +38,14 @@ def lambda_handler(event, context):
         item = response.get('Item')
         
         if not item:
+            log_event(
+                level="WARN",
+                log_type="ACCESS",
+                message="Short URL not found",
+                shortId=short_id,
+                statusCode=404,
+                requestId=request_id
+            )
             return create_response(404, {'error': 'URL not found'})
         
         original_url = item.get('originalUrl')
@@ -35,6 +60,19 @@ def lambda_handler(event, context):
             ExpressionAttributeValues={':zero': 0, ':inc': 1}
         )
         
+        # Access 로그
+        latency_ms = int((time.time() - start_time) * 1000)
+
+        log_event(
+            level="INFO",
+            log_type="ACCESS",
+            message="Redirect success",
+            requestId=request_id,
+            shortId=short_id,
+            statusCode=301,
+            latencyMs=latency_ms
+        )
+
         # 301 리다이렉트
         return {
             'statusCode': 301,
@@ -46,7 +84,15 @@ def lambda_handler(event, context):
         }
         
     except Exception as e:
-        print(f"Error: {str(e)}")
+        log_event(
+            level="ERROR",
+            log_type="ERROR",
+            message="Unhandled exception",
+            errorType=type(e).__name__,
+            errorMessage=str(e),
+            shortId=short_id,
+            requestId=request_id
+        )
         return create_response(500, {'error': 'Internal server error'})
 
 def log_click(short_id, event):
@@ -84,3 +130,15 @@ def create_response(status_code, body):
         },
         'body': json.dumps(body)
     }
+
+def log_event(level, log_type, message, **kwargs):
+    log = {
+        "level": level,               # INFO | ERROR
+        "type": log_type,             # ACCESS | ERROR | PERFORMANCE
+        "message": message,
+        "service": "url-shortener",
+        "function": os.environ.get("AWS_LAMBDA_FUNCTION_NAME"),
+        "timestamp": int(time.time() * 1000)
+    }
+    log.update(kwargs)
+    print(json.dumps(log))

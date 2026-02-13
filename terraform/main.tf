@@ -34,3 +34,14 @@ module "redirect_lambda" {
   urls_table_name   = module.urls_table.name
   clicks_table_name = module.clicks_table.name
 }
+
+# API Gateway
+module "api_gateway" {
+  source = "./modules/api_gateway"
+
+  shorten_lambda_arn  = module.shorten_lambda.arn
+  shorten_lambda_name = module.shorten_lambda.function_name
+
+  redirect_lambda_arn  = module.redirect_lambda.arn
+  redirect_lambda_name = module.redirect_lambda.function_name
+}
