@@ -23,6 +23,13 @@ def lambda_handler(event, context):
         # Path parameter에서 shortId 추출
         short_id = event.get('pathParameters', {}).get('shortId')
         
+        # GET /favicon.ico 요청
+        if short_id == "favicon.ico":
+            return {
+                "statusCode": 204
+            }
+
+
         if not short_id:
             log_event(
                 level="WARN",

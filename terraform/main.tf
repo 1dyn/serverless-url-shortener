@@ -38,6 +38,7 @@ module "redirect_lambda" {
 # API Gateway
 module "api_gateway" {
   source = "./modules/api_gateway"
+  cors_allow_origins = var.cors_allow_origins
 
   shorten_lambda_arn  = module.shorten_lambda.arn
   shorten_lambda_name = module.shorten_lambda.function_name

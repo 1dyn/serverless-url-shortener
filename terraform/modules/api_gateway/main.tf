@@ -2,6 +2,13 @@
 resource "aws_apigatewayv2_api" "this" {
   name          = "url-shortener-api"
   protocol_type = "HTTP"
+
+  cors_configuration {
+    allow_origins = var.cors_allow_origins
+    allow_methods = ["GET", "POST", "OPTIONS"]
+    allow_headers = ["content-type"]
+    max_age       = 3600
+  }
 }
 
 # shorten Lambda 연동

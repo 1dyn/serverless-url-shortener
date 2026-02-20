@@ -12,6 +12,7 @@ resource "aws_lambda_function" "this" {
   environment {
     variables = {
       URLS_TABLE = var.urls_table_name
+      BASE_URL = "https://linkive.cloud"
     }
   }
 }

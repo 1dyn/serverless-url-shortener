@@ -81,7 +81,12 @@ def lambda_handler(event, context):
             return create_response(500, {'error': 'Failed to generate unique short ID'})
         
         # 응답 - BASE URL: API Gateway 주소
-        base_url = os.environ.get('BASE_URL', 'https://your-api-id.execute-api.region.amazonaws.com/prod')
+        base_url = os.environ.get('BASE_URL')
+
+        if not base_url:
+            raise Exception("Base_URL environment variable is not set")
+        
+        base_url = base_url.rstrip('/')
         short_url = f"{base_url}/{short_id}"
         
         return create_response(200, {
