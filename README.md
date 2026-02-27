@@ -224,13 +224,3 @@ cors_allow_origins = [
 - AI 리포트 이메일 발송 기능
 
 ---
-
-## 배운 점
-
-- HTTP API와 Lambda Proxy 통합 구조 이해
-- CORS 동작 원리 및 실제 운영 환경 문제 해결
-- API Gateway Custom Domain 구성
-- Bedrock API 통합 및 비용 제어
-- Terraform 모듈화 설계 경험
-
----
