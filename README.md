@@ -10,7 +10,7 @@
 ## Live Demo
 
 - Frontend: https://linkive.cloud
-- API: https://api.linkive.cloud
+- API: https://api.linkive.cloud/[Method]/[ShortId]
 
 ---
 
