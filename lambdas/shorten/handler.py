@@ -37,7 +37,7 @@ def lambda_handler(event, context):
                 statusCode=400,
                 requestId=request_id
             )
-            return create_response(400, {'error': 'URL is required'})
+            return create_response(400, {'error': 'URL is required'}, event)
         
         if not original_url.startswith(('http://', 'https://')):
             original_url = 'https://' + original_url
@@ -78,7 +78,7 @@ def lambda_handler(event, context):
                 requestId=request_id,
                 retryLimit=MAX_RETRIES
             )
-            return create_response(500, {'error': 'Failed to generate unique short ID'})
+            return create_response(500, {'error': 'Failed to generate unique short ID'}, event)
         
         # 응답 - BASE URL: API Gateway 주소
         base_url = os.environ.get('BASE_URL')

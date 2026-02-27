@@ -76,7 +76,7 @@ def lambda_handler(event, context):
             message="Redirect success",
             requestId=request_id,
             shortId=short_id,
-            statusCode=301,
+            statusCode=302,
             latencyMs=latency_ms
         )
 
