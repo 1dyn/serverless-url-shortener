@@ -80,9 +80,9 @@ def lambda_handler(event, context):
             latencyMs=latency_ms
         )
 
-        # 301 리다이렉트
+        # 302 리다이렉트
         return {
-            'statusCode': 301,
+            'statusCode': 302,
             'headers': {
                 'Location': original_url,
                 'Cache-Control': 'no-cache, no-store, must-revalidate'
