@@ -1,103 +1,220 @@
 # Linkive
 
-> Serverless URL Shortener & Analytics Platform
+> 서버리스 기반 URL 단축 및 AI 분석 서비스
+> 단축 URL 생성부터 단일 링크 통계, 전체 트렌드 분석까지 제공하는 풀스택 프로젝트
 
-Linkive는 AWS 서버리스 아키텍처 기반의 URL 단축 및 클릭 분석 서비스입니다.  
-단순 URL Shortener를 넘어, 클릭 데이터를 수집·분석하고 AI 기반 인사이트를 제공하는 분석형 링크 관리 플랫폼입니다.
-
----
-
-## 🚀 Overview
-
-사용자가 단축 URL로 접근하면:
-
-1. API Gateway가 요청을 수신
-2. Redirect Lambda가 실행
-3. DynamoDB에서 원본 URL 조회
-4. 301 Redirect 응답 반환
-5. 클릭 로그 저장
-
-이후 통계 및 AI 분석 API를 통해 링크 성과를 분석할 수 있습니다.
+![Main](./assets/main.png)
 
 ---
 
-## 🏗 Architecture
+## Live Demo
 
-- **API Gateway**
-  - `POST /shorten` : 단축 URL 생성
-  - `GET /{shortId}` : Redirect 처리
-  - `GET /stats/{shortId}` : 클릭 통계 조회
-  - `GET /analyze/{shortId}` : AI 기반 분석 (In Progress)
-
-- **AWS Lambda (Python)**
-  - shorten Lambda
-  - redirect Lambda
-  - stats Lambda
-  - analyze Lambda (AI 기반 인사이트 분석)
-
-- **Amazon DynamoDB**
-  - `urls` 테이블: URL 메타데이터 저장
-  - `clicks` 테이블: 클릭 로그 저장
-
-- **Frontend**
-  - 통계 대시보드 UI
-  - 차트 기반 클릭 데이터 시각화
-  - 분석 결과 표시 화면
-  - API Gateway 연동
-
-- **Terraform**
-  - Lambda, API Gateway, DynamoDB, IAM 리소스 IaC 관리
-
-- **CloudWatch Logs**
-  - ACCESS / PERFORMANCE / ERROR 구조화 로그
+- Frontend: https://linkive.cloud
+- API: https://api.linkive.cloud
 
 ---
 
-## 🛠 Tech Stack
+## 프로젝트 개요
 
-- AWS Lambda (Python 3.x)
-- Amazon API Gateway
-- Amazon DynamoDB
-- AWS IAM
-- Amazon CloudWatch Logs
-- Terraform (Infrastructure as Code)
-- Frontend Dashboard (Chart-based UI)
-- AI Prompt Engineering (LLM 기반 분석 설계)
+Linkive는 AWS 서버리스 아키텍처를 기반으로 구축한 URL 단축 서비스입니다.
 
----
+단순히 링크를 줄이는 것을 넘어 다음 기능을 제공합니다:
 
-## 📊 Key Features
-
-### 🔗 URL Shortening
-- 고유 shortId 생성
-- DynamoDB 기반 URL 매핑
-- 301 Redirect 응답 처리
-
-### 📈 Click Analytics
-- 최근 7일 클릭 집계
-- 시간대별 클릭 수 (`clicksByHour`)
-- 일자별 클릭 수 (`clicksByDay`)
-- 리퍼러별 분석 (`clicksByReferer`)
-- 피크 시간대 및 주요 유입 도메인 분석
-
-### 🤖 AI Insights (In Progress)
-- 클릭 데이터 기반 분석 항목 설계
-- 카테고리별 프롬프트 템플릿 구성
-- 트래픽 패턴 및 유입 특성 분석
-- 자동 인사이트 요약 생성
-
-### 📊 Dashboard
-- 통계 시각화 UI 구현
-- 분석 결과 표시 영역 구성
-- 프론트엔드 ↔ API Gateway 연동
+- 개별 링크 클릭 통계 분석
+- 전체 서비스 트렌드 분석
+- AI 기반 인사이트 생성
+- 커스텀 도메인 및 HTTPS 적용
+- 비용 최적화 설계
 
 ---
 
-## 🎯 Project Goals
+## 아키텍처
 
-- 서버리스 아키텍처 설계 및 구현 역량 강화
-- DynamoDB 데이터 모델링 및 집계 전략 학습
-- Lambda 기반 API 설계 및 성능 고려
-- IaC(Terraform) 기반 인프라 자동화 경험
-- 데이터 기반 기능 확장 구조 설계
-- AI 분석 기능을 서버리스 환경에 통합하는 구조 설계
+![Architecture](./assets/architecture.png)
+
+---
+
+## 주요 기능
+
+### 1. URL 단축
+
+- 원본 URL 입력
+- 랜덤 shortId 생성
+- DynamoDB 저장
+- 단축 URL 반환
+
+**API:** `POST /shorten`
+
+---
+
+### 2. 단일 링크 분석
+
+- 총 클릭 수
+- 일자별 클릭 수
+- 시간대별 클릭 수
+- 피크 시간
+- 유입 경로 분석
+
+**API:** `GET /stats/{shortId}`
+
+---
+
+### 3. 전체 서비스 분석 (AI 기반)
+
+- 전체 URL 수
+- 전체 클릭 수
+- Top URL
+- Top Domain
+- 트래픽 패턴 분석
+- AI 요약 인사이트
+
+**API:** `GET /trends`
+
+> 클릭 수가 일정 기준 이상일 때만 Bedrock을 호출하여 비용을 최적화했습니다.
+
+---
+
+### 4. 시각화:
+- LineChart (일자별 클릭 수)
+- BarChart (시간대별 클릭 수)
+- Referer 리스트
+
+---
+
+## 기술 스택
+
+### Frontend
+- Next.js (App Router)
+- TypeScript
+- TailwindCSS
+- Recharts
+- Vercel 배포
+
+### Backend
+
+- AWS Lambda (Python 3.11)
+- API Gateway (HTTP API)
+- DynamoDB
+- Amazon Bedrock
+
+### Infrastructure as Code
+
+- Terraform (모듈화 구조)
+- api_gateway
+- lambdas (shorten / redirect / stats / analyze / trends)
+- iam
+- dynamodb
+
+---
+
+## 설계 포인트
+
+### 완전 서버리스 아키텍처
+- EC2 없이 서버리스 구성
+- 자동 확장
+- 사용량 기반 비용 구조
+
+### CORS 문제 해결
+- 커스텀 도메인 환경에서 발생한 CORS 이슈 해결
+- HTTP API + Lambda 응답 헤더 통합 관리
+
+### AI 비용 최적화
+- 클릭 수 threshold 이하일 경우 Bedrock 호출 차단
+- maxTokens 제한
+- 조건부 인사이트 생성
+
+### 커스텀 도메인 구성
+- linkive.cloud (Frontend)
+- api.linkive.cloud (API)
+- ACM + API Gateway Custom Domain
+- Vercel + DNS 연동
+
+---
+
+## 프로젝트 구조
+
+```bash
+frontend/
+  app/
+  components/
+  hooks/
+  lib/
+
+lambdas/
+  shorten/
+  stats/
+  trends/
+  analyze/
+
+terraform/
+  modules/
+    api_gateway/
+    lambdas/
+    iam/
+    dynamodb/
+```
+
+---
+
+## 로컬 실행 방법
+
+### 1. 프론트 실행
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### 2. 인프라 배포
+```bash
+cd terraform
+terraform init
+terraform apply
+```
+
+---
+
+## 환경 변수
+
+### Frontend (.env.local)
+```bash
+NEXT_PUBLIC_API_BASE_URL=https://api.linkive.cloud
+```
+
+### Terraform (tfvars)
+```bash
+cors_allow_origins = [
+  "https://linkive.cloud",
+  "https://www.linkive.cloud",
+  "http://localhost:3000"
+]
+```
+
+---
+
+## 향후 개선 가능 사항
+
+- OAuth 기반 사용자 인증
+- 사용자별 대시보드 분리
+- Redis 캐싱 도입
+- 클릭 이벤트 비동기 처리 (SQS)
+- AI 리포트 이메일 발송 기능
+
+---
+
+## 배운 점
+
+- HTTP API와 Lambda Proxy 통합 구조 이해
+- CORS 동작 원리 및 실제 운영 환경 문제 해결
+- API Gateway Custom Domain 구성
+- Bedrock API 통합 및 비용 제어
+- Terraform 모듈화 설계 경험
+
+---
+
+## 개발자
+
+한동연
+Cloud / DevOps Engineer
+AWS 기반 서버리스 아키텍처 설계 및 인프라 자동화 경험
