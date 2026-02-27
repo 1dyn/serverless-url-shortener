@@ -1,0 +1,23 @@
+variable "lambda_role_arn" {
+    type = string
+}
+
+variable "zip_path" {
+    type = string
+}
+
+variable "urls_table_name" {
+    type = string
+}
+
+variable "clicks_table_name" {
+    type = string
+}
+
+variable "trends_table_name" {
+    type = string
+}
+
+variable "bedrock_model_id" {
+    type = string
+}

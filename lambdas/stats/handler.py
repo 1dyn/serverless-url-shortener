@@ -5,6 +5,7 @@ import time
 from datetime import datetime, timedelta
 from collections import defaultdict
 from boto3.dynamodb.conditions import Key
+from decimal import Decimal
 
 dynamodb = boto3.resource('dynamodb')
 urls_table = dynamodb.Table(os.environ.get('URLS_TABLE', 'urls'))
@@ -80,7 +81,7 @@ def lambda_handler(event, context):
             requestId=request_id,
             shortId=short_id,
             period="7d",
-            totalClicks=url_item.get('clickCount', 0),
+            totalClicks=int(url_item.get('clickCount', 0)),
             recentClickCount=len(clicks)
         )
         return create_response(200, {
@@ -155,7 +156,7 @@ def create_response(status_code, body):
             'Access-Control-Allow-Headers': 'Content-Type',
             'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
         },
-        'body': json.dumps(body)
+        'body': json.dumps(body, default=json_default)
     }
 
 def log_event(level, log_type, message, **kwargs):
@@ -168,4 +169,13 @@ def log_event(level, log_type, message, **kwargs):
         "timestamp": int(time.time() * 1000)
     }
     log.update(kwargs)
-    print(json.dumps(log))
+    print(json.dumps(log, default=json_default))
+
+# Decimal 변환용 함수
+def json_default(obj):
+    if isinstance(obj, Decimal):
+        # 정수로 떨어지면 int, 아니면 float
+        if obj % 1 == 0:
+            return int(obj)
+        return float(obj)
+    raise TypeError(f"Type {type(obj)} not serializable")

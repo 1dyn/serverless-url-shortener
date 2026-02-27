@@ -42,13 +42,23 @@ resource "aws_iam_role_policy" "this" {
           "dynamodb:GetItem",
           "dynamodb:PutItem",
           "dynamodb:UpdateItem",
-          "dynamodb:Query"
+          "dynamodb:Query",
+          "dynamodb:Scan"
         ]
         Resource = [
           var.urls_table_arn,
           var.clicks_table_arn,
           var.trends_table_arn
         ]
+      },
+
+      # Amazon Bedrock용 권한
+      {
+        Effect = "Allow"
+        Action = [
+          "bedrock:InvokeModel"
+        ]
+        Resource = "*"
       }
     ]
   })
