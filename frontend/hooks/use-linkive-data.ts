@@ -122,7 +122,7 @@ export function useLinkiveData() {
 
         try {
             // const res = await fetch(TRENDS_URL)
-            const res = await fetch("/api/trends")
+            const res = await fetch(TRENDS_URL)
             if (!res.ok) throw new Error(`Trends API failed: ${res.status}`)
             const json = await res.json()
             setTrendsResult(json)
