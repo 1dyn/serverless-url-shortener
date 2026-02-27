@@ -32,7 +32,7 @@ def lambda_handler(event, context):
                 message="ShortId missing in stats request",
                 requestId=request_id
             )
-            return create_response(400, {'error': 'Short ID is required'})
+            return create_response(400, {'error': 'Short ID is required'}, event)
         
         # URL 정보 조회
         url_response = urls_table.get_item(Key={'shortId': short_id})
@@ -46,7 +46,7 @@ def lambda_handler(event, context):
                 requestId=request_id,
                 shortId=short_id
             )
-            return create_response(404, {'error': 'URL not found'})
+            return create_response(404, {'error': 'URL not found'}, event)
         
         # 클릭 로그 조회 (최근 7일)
         seven_days_ago = (datetime.utcnow() - timedelta(days=7)).isoformat()
@@ -91,7 +91,7 @@ def lambda_handler(event, context):
             'totalClicks': int(url_item.get('clickCount', 0)),
             'period': '7d',
             'stats': stats
-        })
+        }, event)
         
     except Exception as e:
         log_event(
@@ -101,7 +101,7 @@ def lambda_handler(event, context):
             requestId=request_id,
             error=str(e)
         )
-        return create_response(500, {'error': 'Internal server error'})
+        return create_response(500, {'error': 'Internal server error'}, event)
 
 def calculate_stats(clicks):
     """클릭 데이터 통계 계산"""
@@ -147,16 +147,30 @@ def extract_domain(url):
     except:
         return 'unknown'
 
-def create_response(status_code, body):
+def create_response(status_code, body, event=None):
+    # 허용할 Origin 목록 (배포/로컬)
+    allowed_origins = {
+        "https://linkive.cloud",
+        "https://www.linkive.cloud",
+        "http://localhost:3000",
+    }
+
+    origin = None
+    if event:
+        headers = event.get("headers") or {}
+        origin = headers.get("origin") or headers.get("Origin")
+
+    allow_origin = origin if origin in allowed_origins else "https://linkive.cloud"
+
     return {
-        'statusCode': status_code,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Content-Type',
-            'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
+        "statusCode": status_code,
+        "headers": {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": allow_origin,
+            "Access-Control-Allow-Headers": "content-type,authorization",
+            "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
         },
-        'body': json.dumps(body, default=json_default)
+        "body": json.dumps(body, ensure_ascii=False),
     }
 
 def log_event(level, log_type, message, **kwargs):

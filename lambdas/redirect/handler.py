@@ -38,7 +38,7 @@ def lambda_handler(event, context):
                 statusCode=400,
                 requestId=request_id
             )
-            return create_response(400, {'error': 'Short ID is required'})
+            return create_response(400, {'error': 'Short ID is required'}, event)
         
         # DynamoDB에서 URL 조회
         response = urls_table.get_item(Key={'shortId': short_id})
@@ -53,7 +53,7 @@ def lambda_handler(event, context):
                 statusCode=404,
                 requestId=request_id
             )
-            return create_response(404, {'error': 'URL not found'})
+            return create_response(404, {'error': 'URL not found'}, event)
         
         original_url = item.get('originalUrl')
         
@@ -100,7 +100,7 @@ def lambda_handler(event, context):
             shortId=short_id,
             requestId=request_id
         )
-        return create_response(500, {'error': 'Internal server error'})
+        return create_response(500, {'error': 'Internal server error'}, event)
 
 def log_click(short_id, event):
     """클릭 이벤트 로깅"""
@@ -128,14 +128,30 @@ def hash_ip(ip):
         return 'unknown'
     return hashlib.sha256(ip.encode()).hexdigest()[:16]
 
-def create_response(status_code, body):
+def create_response(status_code, body, event=None):
+    # 허용할 Origin 목록 (배포/로컬)
+    allowed_origins = {
+        "https://linkive.cloud",
+        "https://www.linkive.cloud",
+        "http://localhost:3000",
+    }
+
+    origin = None
+    if event:
+        headers = event.get("headers") or {}
+        origin = headers.get("origin") or headers.get("Origin")
+
+    allow_origin = origin if origin in allowed_origins else "https://linkive.cloud"
+
     return {
-        'statusCode': status_code,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
+        "statusCode": status_code,
+        "headers": {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": allow_origin,
+            "Access-Control-Allow-Headers": "content-type,authorization",
+            "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
         },
-        'body': json.dumps(body)
+        "body": json.dumps(body, ensure_ascii=False),
     }
 
 def log_event(level, log_type, message, **kwargs):

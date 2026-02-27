@@ -93,7 +93,7 @@ def lambda_handler(event, context):
             'shortId': short_id,
             'shortUrl': short_url,
             'originalUrl': original_url
-        })
+        }, event)
         
     except Exception as e:
         log_event(
@@ -104,18 +104,32 @@ def lambda_handler(event, context):
             errorType=type(e).__name__,
             errorMessage=str(e)
         )
-        return create_response(500, {'error': 'Internal server error'})
+        return create_response(500, {'error': 'Internal server error'}, event)
 
-def create_response(status_code, body):
+def create_response(status_code, body, event=None):
+    # 허용할 Origin 목록 (배포/로컬)
+    allowed_origins = {
+        "https://linkive.cloud",
+        "https://www.linkive.cloud",
+        "http://localhost:3000",
+    }
+
+    origin = None
+    if event:
+        headers = event.get("headers") or {}
+        origin = headers.get("origin") or headers.get("Origin")
+
+    allow_origin = origin if origin in allowed_origins else "https://linkive.cloud"
+
     return {
-        'statusCode': status_code,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Headers': 'Content-Type',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS'
+        "statusCode": status_code,
+        "headers": {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": allow_origin,
+            "Access-Control-Allow-Headers": "content-type,authorization",
+            "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
         },
-        'body': json.dumps(body)
+        "body": json.dumps(body, ensure_ascii=False),
     }
 
 # Base62 기반 랜덤 문자열 생성 함수

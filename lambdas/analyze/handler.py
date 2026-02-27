@@ -92,18 +92,11 @@ def lambda_handler(event, context):
             totalClicks=stats.get("totalClicks", 0),
             bedrockUsed=insights.get("_bedrockUsed", False) if isinstance(insights, dict) else False,
         )
-
-        return {
-            "statusCode": 200,
-            "body": json.dumps(
-                {
+        return create_response(200, {
                     "analysisDate": analysis_date,
                     "type": "weekly_summary",
                     **result_obj,
-                },
-                ensure_ascii=False,
-            ),
-        }
+                }, event)
 
     except Exception as e:
         log_event(
@@ -114,7 +107,7 @@ def lambda_handler(event, context):
             analysisDate=analysis_date,
             error=str(e),
         )
-        return {"statusCode": 500, "body": json.dumps({"error": str(e)}, ensure_ascii=False)}
+        return create_response(500, {"error": str(e)}, event)
 
 
 # -----------------------------
@@ -425,3 +418,29 @@ def log_event(level, log_type, message, **kwargs):
     }
     log.update(kwargs)
     print(json.dumps(log, ensure_ascii=False))
+
+def create_response(status_code, body, event=None):
+    # 허용할 Origin 목록 (배포/로컬)
+    allowed_origins = {
+        "https://linkive.cloud",
+        "https://www.linkive.cloud",
+        "http://localhost:3000",
+    }
+
+    origin = None
+    if event:
+        headers = event.get("headers") or {}
+        origin = headers.get("origin") or headers.get("Origin")
+
+    allow_origin = origin if origin in allowed_origins else "https://linkive.cloud"
+
+    return {
+        "statusCode": status_code,
+        "headers": {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": allow_origin,
+            "Access-Control-Allow-Headers": "content-type,authorization",
+            "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+        },
+        "body": json.dumps(body, ensure_ascii=False),
+    }

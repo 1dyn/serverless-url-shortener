@@ -7,18 +7,6 @@ from boto3.dynamodb.conditions import Key
 dynamodb = boto3.resource("dynamodb")
 trends_table = dynamodb.Table(os.environ.get("TRENDS_TABLE", "trends"))
 
-def _resp(status, body):
-    return {
-        "statusCode": status,
-        "headers": {
-            "Content-Type": "application/json; charset=utf-8",
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET,OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type,Authorization",
-        },
-        "body": json.dumps(body, ensure_ascii=False),
-    }
-
 def lambda_handler(event, context):
     # 옵션: /trends/latest?type=weekly_summary
     qs = (event or {}).get("queryStringParameters") or {}
@@ -50,9 +38,35 @@ def lambda_handler(event, context):
                 result = result_raw
 
             # 프론트가 바로 쓰기 좋게 result만 반환
-            return _resp(200, result)
+            return create_response(200, result, event)
 
         except Exception as e:
-            return _resp(500, {"error": str(e)})
+            return create_response(500, {"error": str(e)}, event)
 
-    return _resp(404, {"error": f"Latest trends not found (type={trend_type})"})
+    return create_response(404, {"error": f"Latest trends not found (type={trend_type})"}, event)
+
+def create_response(status_code, body, event=None):
+    # 허용할 Origin 목록 (배포/로컬)
+    allowed_origins = {
+        "https://linkive.cloud",
+        "https://www.linkive.cloud",
+        "http://localhost:3000",
+    }
+
+    origin = None
+    if event:
+        headers = event.get("headers") or {}
+        origin = headers.get("origin") or headers.get("Origin")
+
+    allow_origin = origin if origin in allowed_origins else "https://linkive.cloud"
+
+    return {
+        "statusCode": status_code,
+        "headers": {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": allow_origin,
+            "Access-Control-Allow-Headers": "content-type,authorization",
+            "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+        },
+        "body": json.dumps(body, ensure_ascii=False),
+    }
